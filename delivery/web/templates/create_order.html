@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Создать заказ - Доставка еды{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4"><i class="bi bi-plus-circle text-success"></i> Создание нового заказа</h2>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST" action="{{ url_for('create_order') }}" id="orderForm">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person"></i> Данные заказа</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="user_id" class="form-label">Покупатель</label>
+                                    <select class="form-select" id="user_id" name="user_id" required>
+                                        {% for user in users %}
+                                        <option value="{{ user[0] }}">{{ user[1] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restaurant_id" class="form-label">Ресторан</label>
+                                    <select class="form-select" id="restaurant_id" name="restaurant_id" required>
+                                        {% for restaurant in restaurants %}
+                                        <option value="{{ restaurant[0] }}">{{ restaurant[1] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Адрес доставки</label>
+                            <input type="text" class="form-control" id="address" name="address" 
+                                   placeholder="ул. Тверская, д. 15" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="delivery_type" class="form-label">Тип доставки</label>
+                            <select class="form-select" id="delivery_type" name="delivery_type">
+                                <option value="standard">Стандартная</option>
+                                <option value="express">Экспресс (+200 руб.)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Меню -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-basket"></i> Выбор блюд</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="menuContainer">
+                            <div class="table-responsive">
+                                <table class="table" id="menuTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Блюдо</th>
+                                            <th>Цена</th>
+                                            <th>Кол-во</th>
+                                            <th>Сумма</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="menuBody">
+                                        <!-- Меню загружается через JavaScript -->
+                                        {% for item in menu_items %}
+                                        <tr>
+                                            <td>{{ item[1] }}</td>
+                                            <td>{{ item[2] }} руб.</td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm quantity" 
+                                                       name="quantity[]" value="0" min="0" max="10"
+                                                       data-price="{{ item[2] }}" data-name="{{ item[1] }}" 
+                                                       data-id="{{ item[0] }}">
+                                            </td>
+                                            <td class="item-total">0 руб.</td>
+                                        </tr>
+                                        <input type="hidden" name="item_id[]" value="{{ item[0] }}">
+                                        <input type="hidden" name="item_name[]" value="{{ item[1] }}">
+                                        <input type="hidden" name="item_price[]" value="{{ item[2] }}">
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="text-end mt-3">
+                            <h5>Итого: <span id="totalDisplay" class="text-success">0</span> руб.</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle"></i> Оформить заказ
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Подсказка</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check-circle text-success"></i> Бесплатная доставка при заказе от 1000 руб.</li>
+                        <li><i class="bi bi-percent text-warning"></i> Скидка 10% при заказе от 1500 руб.</li>
+                        <li><i class="bi bi-truck text-primary"></i> Экспресс-доставка быстрее на 30%</li>
+                        <li><i class="bi bi-arrow-repeat text-info"></i> Выберите ресторан для смены меню</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const restaurantSelect = document.getElementById('restaurant_id');
+    const menuBody = document.getElementById('menuBody');
+    const totalDisplay = document.getElementById('totalDisplay');
+    
+    function loadMenu(restaurantId) {
+        console.log('📋 Загрузка меню для ресторана:', restaurantId);
+        
+        menuBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-3">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    Загрузка меню...
+                </td>
+            </tr>
+        `;
+        
+        fetch(`/api/menu/${restaurantId}`)
+            .then(response => response.json())
+            .then(items => {
+                console.log('📋 Получено позиций:', items.length);
+                renderMenu(items);
+            })
+            .catch(error => {
+                console.error('❌ Ошибка загрузки меню:', error);
+                menuBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-danger py-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Ошибка загрузки меню. Попробуйте обновить страницу.
+                        </td>
+                    </tr>
+                `;
+            });
+    }
+    
+    function renderMenu(items) {
+        if (!items || items.length === 0) {
+            menuBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-3">
+                        <i class="bi bi-cart"></i>
+                        В этом ресторане пока нет доступных блюд
+                    </td>
+                </tr>
+            `;
+            updateTotal();
+            return;
+        }
+        
+        let html = '';
+        items.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.price} руб.</td>
+                    <td>
+                        <input type="number" class="form-control form-control-sm quantity" 
+                               name="quantity[]" value="0" min="0" max="10"
+                               data-price="${item.price}" data-name="${item.name}" 
+                               data-id="${item.id}">
+                    </td>
+                    <td class="item-total">0 руб.</td>
+                </tr>
+                <input type="hidden" name="item_id[]" value="${item.id}">
+                <input type="hidden" name="item_name[]" value="${item.name}">
+                <input type="hidden" name="item_price[]" value="${item.price}">
+            `;
+        });
+        
+        menuBody.innerHTML = html;
+        
+        document.querySelectorAll('.quantity').forEach(input => {
+            input.addEventListener('change', updateTotal);
+            input.addEventListener('input', updateTotal);
+        });
+        
+        updateTotal();
+    }
+    
+    function updateTotal() {
+        let total = 0;
+        const quantities = document.querySelectorAll('.quantity');
+        
+        quantities.forEach(input => {
+            const qty = parseInt(input.value) || 0;
+            const price = parseFloat(input.dataset.price);
+            const subtotal = qty * price;
+            total += subtotal;
+            
+            const row = input.closest('tr');
+            const totalCell = row.querySelector('.item-total');
+            if (totalCell) {
+                totalCell.textContent = subtotal > 0 ? subtotal + ' руб.' : '0 руб.';
+            }
+        });
+        
+        totalDisplay.textContent = total;
+    }
+    
+    restaurantSelect.addEventListener('change', function() {
+        const restaurantId = this.value;
+        if (restaurantId) {
+            loadMenu(restaurantId);
+        }
+    });
+    
+    const initialRestaurant = restaurantSelect.value;
+    if (initialRestaurant) {
+
+        const existingQuantities = document.querySelectorAll('.quantity');
+        if (existingQuantities.length > 0) {
+            existingQuantities.forEach(input => {
+                input.addEventListener('change', updateTotal);
+                input.addEventListener('input', updateTotal);
+            });
+            updateTotal();
+        } else {
+            loadMenu(initialRestaurant);
+        }
+    }
+});
+</script>
+{% endblock %}

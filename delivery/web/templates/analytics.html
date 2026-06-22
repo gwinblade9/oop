@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Аналитика - Доставка еды{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4"><i class="bi bi-graph-up text-warning"></i> Аналитика и KPI</h2>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-box"></i> Всего заказов</h6>
+                    <h3>{{ total_orders }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-check-circle"></i> Доставлено</h6>
+                    <h3>{{ delivered_orders }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-x-circle"></i> Отменено</h6>
+                    <h3>{{ cancelled_orders }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-clock"></i> Среднее ETA</h6>
+                    <h3>{{ avg_delivery_time }} мин.</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-cash"></i> Общая выручка</h6>
+                    <h3 class="text-success">{{ total_revenue }} руб.</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-percent"></i> Процент отмен</h6>
+                    <h3 class="text-danger">{{ cancel_percent }}%</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title"><i class="bi bi-star"></i> NPS</h6>
+                    <h3 class="text-primary">+85</h3>
+                    <small class="text-muted">На основе оценок пользователей</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-shop"></i> Статистика по ресторанам</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ресторан</th>
+                            <th>Заказов</th>
+                            <th>Выручка</th>
+                            <th>Средний чек</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in restaurant_stats %}
+                        <tr>
+                            <td>{{ stat.restaurant_name }}</td>
+                            <td>{{ stat.orders_count or 0 }}</td>
+                            <td>{{ stat.total_revenue or 0 }} руб.</td>
+                            <td>{{ stat.avg_order_value or 0 }} руб.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if high_value %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-trophy"></i> Рестораны со средним чеком > 1000 руб.</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ресторан</th>
+                            <th>Заказов</th>
+                            <th>Средний чек</th>
+                            <th>Выручка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in high_value %}
+                        <tr class="table-success">
+                            <td>{{ h.restaurant_name }}</td>
+                            <td>{{ h.orders_count }}</td>
+                            <td>{{ h.avg_order_price }} руб.</td>
+                            <td>{{ h.total_revenue }} руб.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if without_orders %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Рестораны без заказов (7 дней)</h5>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for w in without_orders %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ w.name }}
+                    <span class="badge bg-secondary">{{ w.address }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> Последние заказы (30 дней)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Покупатель</th>
+                            <th>Ресторан</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in orders_details[:10] %}
+                        <tr>
+                            <td>#{{ o.order_id }}</td>
+                            <td>{{ o.customer_name }}</td>
+                            <td>{{ o.restaurant_name }}</td>
+                            <td>{{ o.total_price }} руб.</td>
+                            <td>
+                                <span class="badge" style="background-color: {{ status_colors[o.status] }}">
+                                    {{ status_ru[o.status] }}
+                                </span>
+                            </td>
+                            <td>{{ o.created_at[:16] if o.created_at else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

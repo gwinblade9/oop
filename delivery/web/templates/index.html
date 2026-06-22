@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Доставка еды{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <h1 class="display-4 mb-4">
+                        <i class="bi bi-basket2-fill text-success"></i>
+                        Система доставки еды
+                    </h1>
+                    <p class="lead text-muted">
+                        Управляйте заказами, отслеживайте статусы и анализируйте показатели
+                    </p>
+                    <hr class="my-4">
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('orders_list') }}" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-list-ul"></i><br>
+                                Все заказы
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('create_order') }}" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-plus-circle"></i><br>
+                                Новый заказ
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('analytics') }}" class="btn btn-warning btn-lg w-100">
+                                <i class="bi bi-graph-up"></i><br>
+                                Аналитика
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ orders|length if orders else 0 }}</h3>
+                    <p class="mb-0">Всего заказов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ delivered_count if delivered_count else 0 }}</h3>
+                    <p class="mb-0">Доставлено</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 bg-warning text-white">
+                <div class="card-body text-center">
+                    <h3>{{ active_orders if active_orders else 0 }}</h3>
+                    <p class="mb-0">В обработке</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3>{{ cancelled_count if cancelled_count else 0 }}</h3>
+                    <p class="mb-0">Отменено</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <h3 class="mb-3">
+            <i class="bi bi-clock-history"></i> Последние заказы
+        </h3>
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover shadow-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Статус</th>
+                        <th>Сумма</th>
+                        <th>Дата</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders[:5] %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>
+                            <span class="badge" style="background-color: {{ status_colors[order.status] }}">
+                                {{ status_ru[order.status] }}
+                            </span>
+                        </td>
+                        <td>{{ order.total_price }} руб.</td>
+                        <td>{{ order.created_at[:16] if order.created_at else '—' }}</td>
+                        <td>
+                            <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if orders|length > 5 %}
+        <div class="text-center">
+            <a href="{{ url_for('orders_list') }}" class="btn btn-outline-primary">
+                Показать все заказы <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <p class="text-muted mt-3">Нет заказов</p>
+            <a href="{{ url_for('create_order') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Создать первый заказ
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
